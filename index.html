@@ -536,13 +536,12 @@
       <p class="eyebrow">Physics Tool</p>
       <h1>Speed Distance Time Simulator</h1>
       <p class="subtitle">
-        Fill any two values and leave one empty. The simulator computes the missing value using
-        the standard motion relationship.
+        Interactive motion simulator with live track playback and synchronized charts.
       </p>
     </header>
 
     <section class="content">
-      <p class="hint">Use positive values only. Choose motion mode, then control playback and slider to inspect values.</p>
+      <p class="hint">Set the motion parameters, run the simulation, and inspect values using the slider.</p>
 
       <section class="sim" aria-label="Motion simulation">
         <p class="sim-title">Interactive Motion Simulation</p>
@@ -563,7 +562,7 @@
               <div class="field">
                 <label for="simSpeed">Simulation Speed</label>
                 <div class="input-row">
-                  <input id="simSpeed" type="number" min="0" step="any" value="60" />
+                  <input id="simSpeed" type="number" step="any" value="60" />
                   <select id="simSpeedUnit" aria-label="Simulation speed unit">
                     <option value="m/s">m/s</option>
                     <option value="km/h" selected>km/h</option>
@@ -575,7 +574,7 @@
               <div class="field">
                 <label for="simTime">Simulation Time</label>
                 <div class="input-row">
-                  <input id="simTime" type="number" min="0" step="any" value="10" />
+                  <input id="simTime" type="number" step="any" value="10" />
                   <select id="simTimeUnit" aria-label="Simulation time unit">
                     <option value="s" selected>s</option>
                     <option value="min">min</option>
@@ -1051,8 +1050,8 @@
           return false;
         }
 
-        if (speed <= 0 || time <= 0) {
-          setStatus("Simulation speed and time must be greater than 0.");
+        if (time === 0) {
+          setStatus("Simulation time cannot be 0.");
           return false;
         }
 
@@ -1062,7 +1061,7 @@
 
         simState.mode = motionMode.value;
         simState.speedMs = convertSpeedToMs(speed, simSpeedUnit.value);
-        simState.durationS = convertTimeToS(time, simTimeUnit.value);
+        simState.durationS = Math.abs(convertTimeToS(time, simTimeUnit.value));
         simState.accelerationMs2 = acceleration;
         simState.playbackRate = Number(rateInput.value);
         updateScrubberLimit();
