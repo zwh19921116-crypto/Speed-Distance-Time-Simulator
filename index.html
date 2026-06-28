@@ -515,15 +515,7 @@
             <p class="panel-title">Configuration</p>
 
             <div class="grid">
-              <div class="field">
-                <label for="motionMode">Motion Mode</label>
-                <select id="motionMode" class="mode-pill" aria-label="Motion mode">
-                  <option value="uniform" selected>Uniform Speed</option>
-                  <option value="accelerated">Accelerated Motion</option>
-                </select>
-              </div>
-
-              <div class="field">
+              <div class="field" id="solveForField">
                 <label for="solveFor">Solve For</label>
                 <select id="solveFor" class="mode-pill" aria-label="Solve for">
                   <option value="distance" selected>Distance</option>
@@ -532,7 +524,15 @@
                 </select>
               </div>
 
-              <div class="field">
+              <div class="field" id="motionModeField">
+                <label for="motionMode">Motion Mode</label>
+                <select id="motionMode" class="mode-pill" aria-label="Motion mode">
+                  <option value="uniform" selected>Uniform Speed</option>
+                  <option value="accelerated">Accelerated Motion</option>
+                </select>
+              </div>
+
+              <div class="field" id="simSpeedField">
                 <label for="simSpeed">Simulation Speed</label>
                 <div class="input-row">
                   <input id="simSpeed" type="number" step="any" value="60" />
@@ -544,7 +544,7 @@
                 </div>
               </div>
 
-              <div class="field">
+              <div class="field" id="simTimeField">
                 <label for="simTime">Simulation Time</label>
                 <div class="input-row">
                   <input id="simTime" type="number" step="any" value="1" />
@@ -556,7 +556,7 @@
                 </div>
               </div>
 
-              <div class="field">
+              <div class="field" id="simDistanceField">
                 <label for="simDistance">Simulation Distance</label>
                 <div class="input-row">
                   <input id="simDistance" type="number" step="any" value="1.0" />
@@ -653,6 +653,9 @@
       const simSpeedInput = document.getElementById("simSpeed");
       const simTimeInput = document.getElementById("simTime");
       const simDistanceInput = document.getElementById("simDistance");
+      const simSpeedField = document.getElementById("simSpeedField");
+      const simTimeField = document.getElementById("simTimeField");
+      const simDistanceField = document.getElementById("simDistanceField");
       const simAccelerationInput = document.getElementById("simAcceleration");
       const motionMode = document.getElementById("motionMode");
       const solveFor = document.getElementById("solveFor");
@@ -892,9 +895,17 @@
       }
 
       function updateSolveForUi() {
-        simSpeedInput.disabled = solveFor.value === "speed";
-        simTimeInput.disabled = solveFor.value === "time";
-        simDistanceInput.disabled = solveFor.value === "distance";
+        const solvingSpeed = solveFor.value === "speed";
+        const solvingTime = solveFor.value === "time";
+        const solvingDistance = solveFor.value === "distance";
+
+        simSpeedInput.disabled = solvingSpeed;
+        simTimeInput.disabled = solvingTime;
+        simDistanceInput.disabled = solvingDistance;
+
+        simSpeedField.style.display = solvingSpeed ? "none" : "block";
+        simTimeField.style.display = solvingTime ? "none" : "block";
+        simDistanceField.style.display = solvingDistance ? "none" : "block";
       }
 
       function solveTimeFromDistance(speedMs, accelerationMs2, distanceM) {
