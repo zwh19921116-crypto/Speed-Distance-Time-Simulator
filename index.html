@@ -580,24 +580,6 @@
           <span class="track-end">Finish</span>
         </div>
 
-        <div class="scrub">
-          <div class="scrub-head">
-            <p class="scrub-title">Time Slider (Conversion Based on Position)</p>
-            <p class="scrub-value" id="scrubValue">0 s</p>
-          </div>
-          <input id="timeScrubber" type="range" min="0" max="100" step="0.1" value="0" />
-        </div>
-
-        <div class="graph">
-          <canvas id="distanceTimeGraph" width="760" height="220" aria-label="Distance-time graph"></canvas>
-          <p class="graph-note">Distance-time graph updates with mode. Accelerated mode draws a curve.</p>
-        </div>
-
-        <div class="graph">
-          <canvas id="speedTimeGraph" width="760" height="220" aria-label="Speed-time graph"></canvas>
-          <p class="graph-note">Speed-time graph updates live and follows slider position.</p>
-        </div>
-
         <div class="sim-actions">
           <button class="primary mini" id="startBtn" type="button">Start</button>
           <button class="secondary mini" id="pauseBtn" type="button">Pause</button>
@@ -625,6 +607,24 @@
         </div>
 
         <p class="status" id="simStatus">Ready to simulate.</p>
+
+        <div class="scrub">
+          <div class="scrub-head">
+            <p class="scrub-title">Time Slider (Conversion Based on Position)</p>
+            <p class="scrub-value" id="scrubValue">0 s</p>
+          </div>
+          <input id="timeScrubber" type="range" min="0" max="100" step="0.1" value="0" />
+        </div>
+
+        <div class="graph">
+          <canvas id="distanceTimeGraph" width="760" height="220" aria-label="Distance-time graph"></canvas>
+          <p class="graph-note">Distance-time graph updates with mode. Accelerated mode draws a curve.</p>
+        </div>
+
+        <div class="graph">
+          <canvas id="speedTimeGraph" width="760" height="220" aria-label="Speed-time graph"></canvas>
+          <p class="graph-note">Speed-time graph updates live and follows slider position.</p>
+        </div>
       </section>
     </section>
 
