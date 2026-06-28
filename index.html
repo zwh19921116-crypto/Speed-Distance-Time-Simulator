@@ -454,6 +454,16 @@
       font-size: 13px;
     }
 
+    .mode-pill {
+      width: 100%;
+      border: 1px solid #d0dce8;
+      border-radius: 10px;
+      padding: 10px 11px;
+      font-size: 15px;
+      color: #0f172a;
+      background: #fff;
+    }
+
     .footer {
       padding: 0 24px 22px;
       color: #475569;
@@ -549,6 +559,14 @@
 
         <div class="grid">
           <div class="field">
+            <label for="motionMode">Motion Mode</label>
+            <select id="motionMode" class="mode-pill" aria-label="Motion mode">
+              <option value="uniform" selected>Uniform Speed</option>
+              <option value="accelerated">Accelerated Motion</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label for="simSpeed">Simulation Speed</label>
             <div class="input-row">
               <input id="simSpeed" type="number" min="0" step="any" value="60" />
@@ -569,6 +587,14 @@
                 <option value="min">min</option>
                 <option value="h">h</option>
               </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="simAcceleration">Acceleration</label>
+            <div class="input-row">
+              <input id="simAcceleration" type="number" step="any" value="0" />
+              <span>m/s²</span>
             </div>
           </div>
 
@@ -599,7 +625,12 @@
 
         <div class="graph">
           <canvas id="distanceTimeGraph" width="760" height="220" aria-label="Distance-time graph"></canvas>
-          <p class="graph-note">Graph shows distance vs time. Moving the slider updates the highlighted point.</p>
+          <p class="graph-note">Distance-time graph updates with mode. Accelerated mode draws a curve.</p>
+        </div>
+
+        <div class="graph">
+          <canvas id="speedTimeGraph" width="760" height="220" aria-label="Speed-time graph"></canvas>
+          <p class="graph-note">Speed-time graph updates live and follows slider position.</p>
         </div>
 
         <div class="sim-actions">
@@ -650,6 +681,8 @@
 
       const simSpeedInput = document.getElementById("simSpeed");
       const simTimeInput = document.getElementById("simTime");
+      const simAccelerationInput = document.getElementById("simAcceleration");
+      const motionMode = document.getElementById("motionMode");
       const simSpeedUnit = document.getElementById("simSpeedUnit");
       const simTimeUnit = document.getElementById("simTimeUnit");
       const rateInput = document.getElementById("rate");
@@ -670,6 +703,8 @@
 
       const graphCanvas = document.getElementById("distanceTimeGraph");
       const graphCtx = graphCanvas.getContext("2d");
+      const speedGraphCanvas = document.getElementById("speedTimeGraph");
+      const speedGraphCtx = speedGraphCanvas.getContext("2d");
 
       const track = document.getElementById("track");
       const vehicle = document.getElementById("vehicle");
@@ -822,10 +857,27 @@
         elapsedS: 0,
         durationS: 0,
         speedMs: 0,
+        accelerationMs2: 0,
+        mode: "uniform",
         playbackRate: 1,
         frameId: 0,
         lastTickMs: 0,
       };
+
+      function speedAtTimeS(t) {
+        if (simState.mode === "accelerated") {
+          return Math.max(0, simState.speedMs + simState.accelerationMs2 * t);
+        }
+        return simState.speedMs;
+      }
+
+      function distanceAtTimeS(t) {
+        if (simState.mode === "accelerated") {
+          const d = simState.speedMs * t + 0.5 * simState.accelerationMs2 * t * t;
+          return Math.max(0, d);
+        }
+        return simState.speedMs * t;
+      }
 
       function setStatus(text) {
         simStatus.textContent = text;
@@ -840,18 +892,21 @@
       }
 
       function refreshSimLabels() {
-        const distanceM = simState.speedMs * simState.elapsedS;
+        const distanceM = distanceAtTimeS(simState.elapsedS);
+        const speedNowMs = speedAtTimeS(simState.elapsedS);
         const shownDistance = convertMToDistanceUnit(distanceM, distanceUnit.value);
         const shownTime = convertSToTimeUnit(simState.elapsedS, simTimeUnit.value);
+        const shownSpeed = convertMsToUnit(speedNowMs, simSpeedUnit.value);
         const progress = simState.durationS > 0 ? (simState.elapsedS / simState.durationS) * 100 : 0;
 
         elapsedLabel.textContent = formatWithUnit(shownTime, simTimeUnit.value);
-        distanceLabel.textContent = formatWithUnit(shownDistance, distanceUnit.value);
+        distanceLabel.textContent = formatWithUnit(shownDistance, distanceUnit.value) + " | Speed: " + formatWithUnit(shownSpeed, simSpeedUnit.value);
         progressLabel.textContent = formatNumber(progress) + "%";
         scrubValue.textContent = formatWithUnit(shownTime, simTimeUnit.value);
         timeScrubber.value = formatNumber(simState.elapsedS);
         setVehicleProgress(progress / 100);
-        drawGraph();
+        drawDistanceGraph();
+        drawSpeedGraph();
       }
 
       function updateScrubberLimit() {
@@ -859,7 +914,7 @@
         timeScrubber.max = formatNumber(max);
       }
 
-      function drawGraph() {
+      function drawDistanceGraph() {
         const ctx = graphCtx;
         const width = graphCanvas.width;
         const height = graphCanvas.height;
@@ -877,7 +932,7 @@
         const innerH = height - padTop - padBottom;
 
         const duration = Math.max(simState.durationS, 1);
-        const maxDistanceM = Math.max(simState.speedMs * duration, 1);
+        const maxDistanceM = Math.max(distanceAtTimeS(duration), 1);
         const maxDistanceShown = convertMToDistanceUnit(maxDistanceM, distanceUnit.value);
 
         ctx.strokeStyle = "#dbe7f3";
@@ -898,21 +953,28 @@
         ctx.lineTo(width - padRight, height - padBottom);
         ctx.stroke();
 
-        const x1 = padLeft;
-        const y1 = height - padBottom;
-        const x2 = width - padRight;
-        const y2 = padTop;
-
         ctx.strokeStyle = "#0ea5a3";
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        for (let i = 0; i <= 80; i += 1) {
+          const t = (duration * i) / 80;
+          const distM = distanceAtTimeS(t);
+          const distShown = convertMToDistanceUnit(distM, distanceUnit.value);
+          const x = padLeft + (innerW * t) / duration;
+          const y = height - padBottom - (innerH * distShown) / Math.max(maxDistanceShown, 1e-9);
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
         ctx.stroke();
 
         const progress = Math.min(1, Math.max(0, simState.durationS > 0 ? simState.elapsedS / simState.durationS : 0));
-        const px = x1 + (x2 - x1) * progress;
-        const py = y1 + (y2 - y1) * progress;
+        const px = padLeft + innerW * progress;
+        const currentDistanceShown = convertMToDistanceUnit(distanceAtTimeS(simState.elapsedS), distanceUnit.value);
+        const py = height - padBottom - (innerH * currentDistanceShown) / Math.max(maxDistanceShown, 1e-9);
 
         ctx.fillStyle = "#2563eb";
         ctx.beginPath();
@@ -933,6 +995,84 @@
         ctx.fillText("0", padLeft - 16, height - padBottom + 14);
         ctx.fillText(formatNumber(convertSToTimeUnit(duration, simTimeUnit.value)), width - padRight - 20, height - padBottom + 14);
         ctx.fillText(formatNumber(maxDistanceShown), padLeft - 44, padTop + 4);
+      }
+
+      function drawSpeedGraph() {
+        const ctx = speedGraphCtx;
+        const width = speedGraphCanvas.width;
+        const height = speedGraphCanvas.height;
+        const padLeft = 52;
+        const padRight = 16;
+        const padTop = 16;
+        const padBottom = 36;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+
+        const innerW = width - padLeft - padRight;
+        const innerH = height - padTop - padBottom;
+        const duration = Math.max(simState.durationS, 1);
+        const maxSpeedUnit = Math.max(convertMsToUnit(speedAtTimeS(duration), simSpeedUnit.value), convertMsToUnit(speedAtTimeS(0), simSpeedUnit.value), 1);
+
+        ctx.strokeStyle = "#dbe7f3";
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 5; i += 1) {
+          const gy = padTop + (innerH * i) / 5;
+          ctx.beginPath();
+          ctx.moveTo(padLeft, gy);
+          ctx.lineTo(width - padRight, gy);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(padLeft, padTop);
+        ctx.lineTo(padLeft, height - padBottom);
+        ctx.lineTo(width - padRight, height - padBottom);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#2563eb";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let i = 0; i <= 80; i += 1) {
+          const t = (duration * i) / 80;
+          const speedShown = convertMsToUnit(speedAtTimeS(t), simSpeedUnit.value);
+          const x = padLeft + (innerW * t) / duration;
+          const y = height - padBottom - (innerH * speedShown) / Math.max(maxSpeedUnit, 1e-9);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+
+        const progress = Math.min(1, Math.max(0, simState.durationS > 0 ? simState.elapsedS / simState.durationS : 0));
+        const px = padLeft + innerW * progress;
+        const speedNow = convertMsToUnit(speedAtTimeS(simState.elapsedS), simSpeedUnit.value);
+        const py = height - padBottom - (innerH * speedNow) / Math.max(maxSpeedUnit, 1e-9);
+
+        ctx.fillStyle = "#0ea5a3";
+        ctx.beginPath();
+        ctx.arc(px, py, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#334155";
+        ctx.font = "12px Segoe UI";
+        ctx.fillText("Time (" + simTimeUnit.value + ")", width / 2 - 28, height - 12);
+
+        ctx.save();
+        ctx.translate(14, height / 2 + 18);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText("Speed (" + simSpeedUnit.value + ")", 0, 0);
+        ctx.restore();
+
+        ctx.fillStyle = "#0f172a";
+        ctx.fillText("0", padLeft - 16, height - padBottom + 14);
+        ctx.fillText(formatNumber(convertSToTimeUnit(duration, simTimeUnit.value)), width - padRight - 20, height - padBottom + 14);
+        ctx.fillText(formatNumber(maxSpeedUnit), padLeft - 44, padTop + 4);
       }
 
       function stopAnimation() {
@@ -965,9 +1105,10 @@
       function parseSimulationInputs() {
         const speed = toNumber(simSpeedInput.value);
         const time = toNumber(simTimeInput.value);
+        const acceleration = toNumber(simAccelerationInput.value);
 
-        if (speed === null || time === null) {
-          setStatus("Simulation speed and time are required.");
+        if (speed === null || time === null || acceleration === null) {
+          setStatus("Simulation speed, time, and acceleration are required.");
           return false;
         }
 
@@ -976,8 +1117,14 @@
           return false;
         }
 
+        if (motionMode.value === "uniform" && acceleration !== 0) {
+          setStatus("Uniform mode ignores acceleration. Set mode to Accelerated to use it.");
+        }
+
+        simState.mode = motionMode.value;
         simState.speedMs = convertSpeedToMs(speed, simSpeedUnit.value);
         simState.durationS = convertTimeToS(time, simTimeUnit.value);
+        simState.accelerationMs2 = acceleration;
         simState.playbackRate = Number(rateInput.value);
         updateScrubberLimit();
 
@@ -1039,6 +1186,8 @@
 
         simSpeedInput.value = speedInput.value;
         simTimeInput.value = timeInput.value;
+        simAccelerationInput.value = "0";
+        motionMode.value = "uniform";
         simSpeedUnit.value = speedUnit.value;
         simTimeUnit.value = timeUnit.value;
         setStatus("Imported speed and time from calculator.");
@@ -1073,7 +1222,7 @@
         setStatus("Updated from slider position.");
       });
 
-      [simSpeedInput, simTimeInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
+      [motionMode, simSpeedInput, simTimeInput, simAccelerationInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
         node.addEventListener("change", function () {
           parseSimulationInputs();
           refreshSimLabels();
