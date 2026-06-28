@@ -341,17 +341,6 @@
       min-height: 24px;
     }
 
-    .sim-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .mini {
-      padding: 9px 14px;
-      font-size: 14px;
-    }
-
     .status {
       margin: 0;
       color: #334155;
@@ -587,14 +576,7 @@
           </div>
 
           <div class="sim-right">
-            <p class="panel-title">Simulation</p>
-
-            <div class="sim-actions">
-              <button class="primary mini" id="startBtn" type="button">Start</button>
-              <button class="secondary mini" id="pauseBtn" type="button">Pause</button>
-              <button class="secondary mini" id="resumeBtn" type="button">Resume</button>
-              <button class="secondary mini" id="resetSimBtn" type="button">Reset Simulation</button>
-            </div>
+            <p class="panel-title">Results</p>
 
             <div class="sim-grid">
               <article class="sim-card">
@@ -663,11 +645,6 @@
       const simTimeUnit = document.getElementById("simTimeUnit");
       const rateInput = document.getElementById("rate");
       const rateText = document.getElementById("rateText");
-
-      const startBtn = document.getElementById("startBtn");
-      const pauseBtn = document.getElementById("pauseBtn");
-      const resumeBtn = document.getElementById("resumeBtn");
-      const resetSimBtn = document.getElementById("resetSimBtn");
 
       const elapsedLabel = document.getElementById("elapsedLabel");
       const distanceLabel = document.getElementById("distanceLabel");
@@ -819,15 +796,12 @@
       }
 
       const simState = {
-        running: false,
         elapsedS: 0,
         durationS: 0,
         speedMs: 0,
         accelerationMs2: 0,
         mode: "uniform",
         playbackRate: 1,
-        frameId: 0,
-        lastTickMs: 0,
       };
 
       let graphHover = null;
@@ -1109,33 +1083,6 @@
         drawDistanceGraph();
       }
 
-      function stopAnimation() {
-        simState.running = false;
-        if (simState.frameId) {
-          cancelAnimationFrame(simState.frameId);
-          simState.frameId = 0;
-        }
-      }
-
-      function animationStep(now) {
-        if (!simState.running) return;
-        if (!simState.lastTickMs) simState.lastTickMs = now;
-
-        const deltaS = ((now - simState.lastTickMs) / 1000) * simState.playbackRate;
-        simState.lastTickMs = now;
-        simState.elapsedS = Math.min(simState.durationS, simState.elapsedS + deltaS);
-
-        refreshSimLabels();
-
-        if (simState.elapsedS >= simState.durationS) {
-          stopAnimation();
-          setStatus("Finished: object reached the finish line.");
-          return;
-        }
-
-        simState.frameId = requestAnimationFrame(animationStep);
-      }
-
       function parseSimulationInputs() {
         const speed = toNumber(simSpeedInput.value);
         const time = toNumber(simTimeInput.value);
@@ -1220,54 +1167,15 @@
         return true;
       }
 
-      function startSimulation() {
-        stopAnimation();
-        simState.elapsedS = 0;
-
-        if (!parseSimulationInputs()) {
-          refreshSimLabels();
-          return;
-        }
-
-        simState.running = true;
-        simState.lastTickMs = 0;
-        setStatus("Running simulation...");
-        refreshSimLabels();
-        simState.frameId = requestAnimationFrame(animationStep);
-      }
-
-      function pauseSimulation() {
-        if (!simState.running) return;
-        stopAnimation();
-        setStatus("Paused.");
-      }
-
-      function resumeSimulation() {
-        if (simState.running) return;
-        if (simState.durationS <= 0 || simState.elapsedS >= simState.durationS) {
-          setStatus("Start a simulation first.");
-          return;
-        }
-        simState.running = true;
-        simState.lastTickMs = 0;
-        setStatus("Running simulation...");
-        simState.frameId = requestAnimationFrame(animationStep);
-      }
-
       function resetSimulation() {
-        stopAnimation();
         simState.elapsedS = 0;
         simState.durationS = 0;
         simState.speedMs = 0;
+        simState.accelerationMs2 = 0;
         updateScrubberLimit();
         refreshSimLabels();
         setStatus("");
       }
-
-      startBtn.addEventListener("click", startSimulation);
-      pauseBtn.addEventListener("click", pauseSimulation);
-      resumeBtn.addEventListener("click", resumeSimulation);
-      resetSimBtn.addEventListener("click", resetSimulation);
 
       rateInput.addEventListener("input", function () {
         simState.playbackRate = Number(rateInput.value);
@@ -1282,8 +1190,6 @@
       });
 
       timeScrubber.addEventListener("input", function () {
-        stopAnimation();
-
         if (!parseSimulationInputs()) {
           simState.elapsedS = 0;
           refreshSimLabels();
@@ -1304,7 +1210,6 @@
       graphCanvas.addEventListener("click", function (event) {
         updateHoverFromEvent(event);
         if (!graphHover) return;
-        stopAnimation();
         simState.elapsedS = Math.min(simState.durationS, Math.max(0, graphHover.timeS));
         refreshSimLabels();
         setStatus("Updated from graph selection.");
