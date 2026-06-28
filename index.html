@@ -525,6 +525,15 @@
               </div>
 
               <div class="field">
+                <label for="solveFor">Solve For</label>
+                <select id="solveFor" class="mode-pill" aria-label="Solve for">
+                  <option value="distance" selected>Distance</option>
+                  <option value="time">Time</option>
+                  <option value="speed">Speed</option>
+                </select>
+              </div>
+
+              <div class="field">
                 <label for="simSpeed">Simulation Speed</label>
                 <div class="input-row">
                   <input id="simSpeed" type="number" step="any" value="60" />
@@ -647,6 +656,7 @@
       const simDistanceInput = document.getElementById("simDistance");
       const simAccelerationInput = document.getElementById("simAcceleration");
       const motionMode = document.getElementById("motionMode");
+      const solveFor = document.getElementById("solveFor");
       const simSpeedUnit = document.getElementById("simSpeedUnit");
       const simTimeUnit = document.getElementById("simTimeUnit");
       const rateInput = document.getElementById("rate");
@@ -818,7 +828,6 @@
         lastTickMs: 0,
       };
 
-      let lastEditedField = "simTime";
       let graphHover = null;
 
       function speedAtTimeS(t) {
@@ -881,6 +890,12 @@
 
       function applyModeVisibility() {
         speedCard.style.display = "grid";
+      }
+
+      function updateSolveForUi() {
+        simSpeedInput.disabled = solveFor.value === "speed";
+        simTimeInput.disabled = solveFor.value === "time";
+        simDistanceInput.disabled = solveFor.value === "distance";
       }
 
       function solveTimeFromDistance(speedMs, accelerationMs2, distanceM) {
@@ -1122,36 +1137,34 @@
         const timeSInput = time === null ? null : convertTimeToS(time, simTimeUnit.value);
         const distanceMInput = distance === null ? null : convertDistanceToM(distance, distanceUnit.value);
 
-        const knownCount = [speedMsInput, timeSInput, distanceMInput].filter((v) => v !== null).length;
-        if (knownCount < 2) {
-          clearFormulaPanel("Enter at least two values to show the formula.");
-          setStatus("Enter at least two values among Speed, Time, and Distance.");
-          return false;
-        }
-
         let solvedSpeedMs = speedMsInput;
         let solvedTimeS = timeSInput;
         let solvedDistanceM = distanceMInput;
-        let targetField = null;
+        const targetField = solveFor.value;
 
         const activeAcceleration = motionMode.value === "accelerated" ? acceleration : 0;
 
-        if (knownCount === 3) {
-          if (lastEditedField === "simDistance") {
-            solvedTimeS = null;
-            targetField = "time";
-          } else if (lastEditedField === "simTime") {
-            solvedDistanceM = null;
-            targetField = "distance";
-          } else if (lastEditedField === "simSpeed") {
-            solvedDistanceM = null;
-            targetField = "distance";
-          }
+        if (targetField === "speed") solvedSpeedMs = null;
+        if (targetField === "time") solvedTimeS = null;
+        if (targetField === "distance") solvedDistanceM = null;
+
+        if (targetField === "speed" && (distanceMInput === null || timeSInput === null)) {
+          clearFormulaPanel("Enter Distance and Time to solve Speed.");
+          setStatus("Provide Distance and Time to solve Speed.");
+          return false;
         }
 
-        if (solvedSpeedMs === null) targetField = "speed";
-        if (solvedTimeS === null) targetField = "time";
-        if (solvedDistanceM === null) targetField = "distance";
+        if (targetField === "time" && (distanceMInput === null || speedMsInput === null)) {
+          clearFormulaPanel("Enter Distance and Speed to solve Time.");
+          setStatus("Provide Distance and Speed to solve Time.");
+          return false;
+        }
+
+        if (targetField === "distance" && (speedMsInput === null || timeSInput === null)) {
+          clearFormulaPanel("Enter Speed and Time to solve Distance.");
+          setStatus("Provide Speed and Time to solve Distance.");
+          return false;
+        }
 
         if (solvedSpeedMs === null) {
           if (solvedTimeS === 0) {
@@ -1191,6 +1204,7 @@
         simState.playbackRate = Number(rateInput.value);
         updateScrubberLimit();
         applyModeVisibility();
+        updateSolveForUi();
         updateFormulaPanel(targetField, activeAcceleration, solvedSpeedMs, solvedTimeS, solvedDistanceM);
 
         return true;
@@ -1252,7 +1266,6 @@
 
       [simSpeedInput, simTimeInput, simDistanceInput].forEach((node) => {
         node.addEventListener("input", function () {
-          lastEditedField = node.id;
           parseSimulationInputs();
           refreshSimLabels();
         });
@@ -1287,7 +1300,7 @@
         setStatus("Updated from graph selection.");
       });
 
-      [motionMode, simSpeedInput, simTimeInput, simDistanceInput, simAccelerationInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
+      [motionMode, solveFor, simSpeedInput, simTimeInput, simDistanceInput, simAccelerationInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
         node.addEventListener("change", function () {
           parseSimulationInputs();
           refreshSimLabels();
@@ -1299,6 +1312,7 @@
       resetSimulation();
       parseSimulationInputs();
       applyModeVisibility();
+      updateSolveForUi();
     })();
   </script>
 </body>
