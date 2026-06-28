@@ -506,53 +506,7 @@
     </header>
 
     <section class="content">
-      <p class="hint">Use positive values only. Time must be greater than 0 when calculating speed.</p>
-
-      <div class="grid">
-        <div class="field">
-          <label for="speed">Speed</label>
-          <div class="input-row">
-            <input id="speed" type="number" min="0" step="any" placeholder="e.g. 60" />
-            <select id="speedUnit" aria-label="Speed unit">
-              <option value="m/s">m/s</option>
-              <option value="km/h" selected>km/h</option>
-              <option value="mph">mph</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="distance">Distance</label>
-          <div class="input-row">
-            <input id="distance" type="number" min="0" step="any" placeholder="e.g. 120" />
-            <select id="distanceUnit" aria-label="Distance unit">
-              <option value="m">m</option>
-              <option value="km" selected>km</option>
-              <option value="mi">mi</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="time">Time</label>
-          <div class="input-row">
-            <input id="time" type="number" min="0" step="any" placeholder="e.g. 2" />
-            <select id="timeUnit" aria-label="Time unit">
-              <option value="s">s</option>
-              <option value="min">min</option>
-              <option value="h" selected>h</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button class="primary" id="calculateBtn" type="button">Calculate</button>
-        <button class="secondary" id="resetBtn" type="button">Reset</button>
-      </div>
-
-      <p id="result" class="result">Result will appear here.</p>
-      <p class="formula">Formula: distance = speed x time</p>
+      <p class="hint">Use positive values only. Choose motion mode, then control playback and slider to inspect values.</p>
 
       <section class="sim" aria-label="Motion simulation">
         <p class="sim-title">Interactive Motion Simulation</p>
@@ -599,6 +553,17 @@
           </div>
 
           <div class="field">
+            <label for="distanceUnit">Distance Unit</label>
+            <div class="input-row">
+              <select id="distanceUnit" aria-label="Distance unit">
+                <option value="m">m</option>
+                <option value="km" selected>km</option>
+                <option value="mi">mi</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
             <label for="rate">Playback Rate</label>
             <div class="input-row">
               <input id="rate" type="range" min="0.25" max="4" step="0.25" value="1" />
@@ -638,7 +603,6 @@
           <button class="secondary mini" id="pauseBtn" type="button">Pause</button>
           <button class="secondary mini" id="resumeBtn" type="button">Resume</button>
           <button class="secondary mini" id="resetSimBtn" type="button">Reset Simulation</button>
-          <button class="secondary mini" id="useCalculatorBtn" type="button">Use Calculator Values</button>
         </div>
 
         <div class="sim-grid">
@@ -667,17 +631,7 @@
 
   <script>
     (function () {
-      const speedInput = document.getElementById("speed");
-      const distanceInput = document.getElementById("distance");
-      const timeInput = document.getElementById("time");
-
-      const speedUnit = document.getElementById("speedUnit");
       const distanceUnit = document.getElementById("distanceUnit");
-      const timeUnit = document.getElementById("timeUnit");
-
-      const result = document.getElementById("result");
-      const calculateBtn = document.getElementById("calculateBtn");
-      const resetBtn = document.getElementById("resetBtn");
 
       const simSpeedInput = document.getElementById("simSpeed");
       const simTimeInput = document.getElementById("simTime");
@@ -692,7 +646,6 @@
       const pauseBtn = document.getElementById("pauseBtn");
       const resumeBtn = document.getElementById("resumeBtn");
       const resetSimBtn = document.getElementById("resetSimBtn");
-      const useCalculatorBtn = document.getElementById("useCalculatorBtn");
 
       const elapsedLabel = document.getElementById("elapsedLabel");
       const distanceLabel = document.getElementById("distanceLabel");
@@ -708,11 +661,6 @@
 
       const track = document.getElementById("track");
       const vehicle = document.getElementById("vehicle");
-
-      function show(message, state) {
-        result.textContent = message;
-        result.className = "result" + (state ? " " + state : "");
-      }
 
       function toNumber(value) {
         if (value === "" || value === null) return null;
@@ -770,86 +718,6 @@
 
       function formatWithUnit(value, unit) {
         return formatNumber(value) + " " + unit;
-      }
-
-      function validateValues(entries) {
-        for (const item of entries) {
-          if (item.value !== null && item.value < 0) {
-            return item.name + " cannot be negative.";
-          }
-        }
-        return null;
-      }
-
-      function calculate() {
-        const speed = toNumber(speedInput.value);
-        const distance = toNumber(distanceInput.value);
-        const time = toNumber(timeInput.value);
-
-        const filled = [speed, distance, time].filter((v) => v !== null).length;
-
-        if (filled !== 2) {
-          show("Enter exactly two values and leave one blank.", "warn");
-          return;
-        }
-
-        const invalid = validateValues([
-          { name: "Speed", value: speed },
-          { name: "Distance", value: distance },
-          { name: "Time", value: time },
-        ]);
-
-        if (invalid) {
-          show(invalid, "warn");
-          return;
-        }
-
-        if (speed !== null && distance !== null && time === null) {
-          const sMs = convertSpeedToMs(speed, speedUnit.value);
-          const dM = convertDistanceToM(distance, distanceUnit.value);
-          if (sMs === 0) {
-            show("Speed must be greater than 0 to calculate time.", "warn");
-            return;
-          }
-          const timeS = dM / sMs;
-          const timeOut = convertSToTimeUnit(timeS, timeUnit.value);
-          timeInput.value = formatNumber(timeOut);
-          show("Time = " + formatNumber(timeOut) + " " + timeUnit.value, "ok");
-          return;
-        }
-
-        if (speed !== null && time !== null && distance === null) {
-          const sMs = convertSpeedToMs(speed, speedUnit.value);
-          const tS = convertTimeToS(time, timeUnit.value);
-          const dM = sMs * tS;
-          const distOut = convertMToDistanceUnit(dM, distanceUnit.value);
-          distanceInput.value = formatNumber(distOut);
-          show("Distance = " + formatNumber(distOut) + " " + distanceUnit.value, "ok");
-          return;
-        }
-
-        if (distance !== null && time !== null && speed === null) {
-          const dM = convertDistanceToM(distance, distanceUnit.value);
-          const tS = convertTimeToS(time, timeUnit.value);
-          if (tS === 0) {
-            show("Time must be greater than 0 to calculate speed.", "warn");
-            return;
-          }
-          const sMs = dM / tS;
-          const speedOut = convertMsToUnit(sMs, speedUnit.value);
-          speedInput.value = formatNumber(speedOut);
-          show("Speed = " + formatNumber(speedOut) + " " + speedUnit.value, "ok");
-          return;
-        }
-
-        show("Could not calculate. Check your inputs.", "warn");
-      }
-
-      function reset() {
-        speedInput.value = "";
-        distanceInput.value = "";
-        timeInput.value = "";
-        show("Result will appear here.");
       }
 
       const simState = {
@@ -1175,32 +1043,10 @@
         setStatus("Ready to simulate.");
       }
 
-      function useCalculatorValues() {
-        const speed = toNumber(speedInput.value);
-        const time = toNumber(timeInput.value);
-
-        if (speed === null || time === null || speed <= 0 || time <= 0) {
-          setStatus("Provide calculator Speed and Time first, then try again.");
-          return;
-        }
-
-        simSpeedInput.value = speedInput.value;
-        simTimeInput.value = timeInput.value;
-        simAccelerationInput.value = "0";
-        motionMode.value = "uniform";
-        simSpeedUnit.value = speedUnit.value;
-        simTimeUnit.value = timeUnit.value;
-        setStatus("Imported speed and time from calculator.");
-      }
-
-      calculateBtn.addEventListener("click", calculate);
-      resetBtn.addEventListener("click", reset);
-
       startBtn.addEventListener("click", startSimulation);
       pauseBtn.addEventListener("click", pauseSimulation);
       resumeBtn.addEventListener("click", resumeSimulation);
       resetSimBtn.addEventListener("click", resetSimulation);
-      useCalculatorBtn.addEventListener("click", useCalculatorValues);
 
       rateInput.addEventListener("input", function () {
         simState.playbackRate = Number(rateInput.value);
@@ -1230,14 +1076,6 @@
       });
 
       window.addEventListener("resize", refreshSimLabels);
-
-      [speedInput, distanceInput, timeInput].forEach((input) => {
-        input.addEventListener("keydown", function (event) {
-          if (event.key === "Enter") {
-            calculate();
-          }
-        });
-      });
 
       resetSimulation();
     })();
