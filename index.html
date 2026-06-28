@@ -477,6 +477,7 @@
       display: block;
       border-radius: 10px;
       background: #ffffff;
+      cursor: crosshair;
     }
 
     .graph-note {
@@ -789,6 +790,7 @@
       };
 
       let lastEditedField = "simTime";
+      let graphHover = null;
 
       function speedAtTimeS(t) {
         if (simState.mode === "accelerated") {
@@ -907,14 +909,23 @@
         const duration = Math.max(simState.durationS, 1);
         const maxDistanceM = Math.max(distanceAtTimeS(duration), 1);
         const maxDistanceShown = convertMToDistanceUnit(maxDistanceM, distanceUnit.value);
+        const tickCount = 5;
 
         ctx.strokeStyle = "#dbe7f3";
         ctx.lineWidth = 1;
-        for (let i = 0; i <= 5; i += 1) {
-          const gy = padTop + (innerH * i) / 5;
+        for (let i = 0; i <= tickCount; i += 1) {
+          const gy = padTop + (innerH * i) / tickCount;
           ctx.beginPath();
           ctx.moveTo(padLeft, gy);
           ctx.lineTo(width - padRight, gy);
+          ctx.stroke();
+        }
+
+        for (let i = 0; i <= tickCount; i += 1) {
+          const gx = padLeft + (innerW * i) / tickCount;
+          ctx.beginPath();
+          ctx.moveTo(gx, padTop);
+          ctx.lineTo(gx, height - padBottom);
           ctx.stroke();
         }
 
@@ -965,9 +976,84 @@
         ctx.restore();
 
         ctx.fillStyle = "#0f172a";
-        ctx.fillText("0", padLeft - 16, height - padBottom + 14);
-        ctx.fillText(formatNumber(convertSToTimeUnit(duration, simTimeUnit.value)), width - padRight - 20, height - padBottom + 14);
-        ctx.fillText(formatNumber(maxDistanceShown), padLeft - 44, padTop + 4);
+        ctx.textAlign = "center";
+        for (let i = 0; i <= tickCount; i += 1) {
+          const tickTimeS = (duration * i) / tickCount;
+          const tickX = padLeft + (innerW * i) / tickCount;
+          ctx.fillText(formatNumber(convertSToTimeUnit(tickTimeS, simTimeUnit.value)), tickX, height - padBottom + 14);
+        }
+
+        ctx.textAlign = "right";
+        for (let i = 0; i <= tickCount; i += 1) {
+          const tickDistance = (maxDistanceShown * (tickCount - i)) / tickCount;
+          const tickY = padTop + (innerH * i) / tickCount;
+          ctx.fillText(formatNumber(tickDistance), padLeft - 8, tickY + 4);
+        }
+
+        if (graphHover) {
+          const hoverTimeS = graphHover.timeS;
+          const hoverDistanceShown = convertMToDistanceUnit(distanceAtTimeS(hoverTimeS), distanceUnit.value);
+          const hoverX = padLeft + (innerW * hoverTimeS) / duration;
+          const hoverY = height - padBottom - (innerH * hoverDistanceShown) / Math.max(maxDistanceShown, 1e-9);
+
+          ctx.strokeStyle = "rgba(37, 99, 235, 0.45)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(hoverX, padTop);
+          ctx.lineTo(hoverX, height - padBottom);
+          ctx.moveTo(padLeft, hoverY);
+          ctx.lineTo(width - padRight, hoverY);
+          ctx.stroke();
+
+          ctx.fillStyle = "#0f172a";
+          ctx.beginPath();
+          ctx.arc(hoverX, hoverY, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          const tooltipLine1 = "t: " + formatNumber(convertSToTimeUnit(hoverTimeS, simTimeUnit.value)) + " " + simTimeUnit.value;
+          const tooltipLine2 = "d: " + formatNumber(hoverDistanceShown) + " " + distanceUnit.value;
+          ctx.font = "12px Segoe UI";
+          const tooltipWidth = Math.max(ctx.measureText(tooltipLine1).width, ctx.measureText(tooltipLine2).width) + 16;
+          const tooltipHeight = 38;
+          const tooltipX = Math.min(width - padRight - tooltipWidth, hoverX + 10);
+          const tooltipY = Math.max(padTop + 4, hoverY - tooltipHeight - 8);
+
+          ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+          ctx.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "left";
+          ctx.fillText(tooltipLine1, tooltipX + 8, tooltipY + 15);
+          ctx.fillText(tooltipLine2, tooltipX + 8, tooltipY + 30);
+        }
+
+        ctx.textAlign = "start";
+      }
+
+      function updateHoverFromEvent(event) {
+        const rect = graphCanvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const width = rect.width;
+        const height = rect.height;
+        const padLeft = 52;
+        const padRight = 16;
+        const padTop = 16;
+        const padBottom = 36;
+        const innerW = width - padLeft - padRight;
+        const innerH = height - padTop - padBottom;
+
+        if (x < padLeft || x > padLeft + innerW || y < padTop || y > padTop + innerH) {
+          graphHover = null;
+          drawDistanceGraph();
+          return;
+        }
+
+        const duration = Math.max(simState.durationS, 1);
+        const progress = Math.min(1, Math.max(0, (x - padLeft) / innerW));
+        graphHover = {
+          timeS: duration * progress,
+        };
+        drawDistanceGraph();
       }
 
       function stopAnimation() {
@@ -1144,6 +1230,20 @@
         simState.elapsedS = Math.min(simState.durationS, Math.max(0, sliderS));
         refreshSimLabels();
         setStatus("Updated from slider position.");
+      });
+
+      graphCanvas.addEventListener("mousemove", updateHoverFromEvent);
+      graphCanvas.addEventListener("mouseleave", function () {
+        graphHover = null;
+        drawDistanceGraph();
+      });
+      graphCanvas.addEventListener("click", function (event) {
+        updateHoverFromEvent(event);
+        if (!graphHover) return;
+        stopAnimation();
+        simState.elapsedS = Math.min(simState.durationS, Math.max(0, graphHover.timeS));
+        refreshSimLabels();
+        setStatus("Updated from graph selection.");
       });
 
       [motionMode, simSpeedInput, simTimeInput, simDistanceInput, simAccelerationInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
