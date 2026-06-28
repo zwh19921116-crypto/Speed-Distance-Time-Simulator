@@ -615,6 +615,10 @@
             <p class="sim-value" id="distanceLabel">0 m</p>
           </article>
           <article class="sim-card">
+            <p class="sim-label">Speed</p>
+            <p class="sim-value" id="speedLabel">0 km/h</p>
+          </article>
+          <article class="sim-card">
             <p class="sim-label">Progress</p>
             <p class="sim-value" id="progressLabel">0%</p>
           </article>
@@ -649,6 +653,7 @@
 
       const elapsedLabel = document.getElementById("elapsedLabel");
       const distanceLabel = document.getElementById("distanceLabel");
+      const speedLabel = document.getElementById("speedLabel");
       const progressLabel = document.getElementById("progressLabel");
       const simStatus = document.getElementById("simStatus");
       const timeScrubber = document.getElementById("timeScrubber");
@@ -768,7 +773,8 @@
         const progress = simState.durationS > 0 ? (simState.elapsedS / simState.durationS) * 100 : 0;
 
         elapsedLabel.textContent = formatWithUnit(shownTime, simTimeUnit.value);
-        distanceLabel.textContent = formatWithUnit(shownDistance, distanceUnit.value) + " | Speed: " + formatWithUnit(shownSpeed, simSpeedUnit.value);
+        distanceLabel.textContent = formatWithUnit(shownDistance, distanceUnit.value);
+        speedLabel.textContent = formatWithUnit(shownSpeed, simSpeedUnit.value);
         progressLabel.textContent = formatNumber(progress) + "%";
         scrubValue.textContent = formatWithUnit(shownTime, simTimeUnit.value);
         timeScrubber.value = formatNumber(simState.elapsedS);
