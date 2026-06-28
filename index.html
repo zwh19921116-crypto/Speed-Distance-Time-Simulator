@@ -1004,10 +1004,14 @@
           ctx.arc(hoverX, hoverY, 4, 0, Math.PI * 2);
           ctx.fill();
 
-          const tooltipLine1 = "Time: " + formatNumber(convertSToTimeUnit(hoverTimeS, simTimeUnit.value)) + " " + simTimeUnit.value;
-          const tooltipLine2 = "Distance: " + formatNumber(hoverDistanceShown) + " " + distanceUnit.value;
+          const tooltipLabel1 = "Time:";
+          const tooltipValue1 = formatNumber(convertSToTimeUnit(hoverTimeS, simTimeUnit.value)) + " " + simTimeUnit.value;
+          const tooltipLabel2 = "Distance:";
+          const tooltipValue2 = formatNumber(hoverDistanceShown) + " " + distanceUnit.value;
           ctx.font = "12px Segoe UI";
-          const tooltipWidth = Math.max(ctx.measureText(tooltipLine1).width, ctx.measureText(tooltipLine2).width) + 16;
+          const labelWidth = Math.max(ctx.measureText(tooltipLabel1).width, ctx.measureText(tooltipLabel2).width);
+          const valueWidth = Math.max(ctx.measureText(tooltipValue1).width, ctx.measureText(tooltipValue2).width);
+          const tooltipWidth = labelWidth + valueWidth + 28;
           const tooltipHeight = 38;
           const tooltipX = Math.min(width - padRight - tooltipWidth, hoverX + 10);
           const tooltipY = Math.max(padTop + 4, hoverY - tooltipHeight - 8);
@@ -1016,8 +1020,12 @@
           ctx.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
           ctx.fillStyle = "#ffffff";
           ctx.textAlign = "left";
-          ctx.fillText(tooltipLine1, tooltipX + 8, tooltipY + 15);
-          ctx.fillText(tooltipLine2, tooltipX + 8, tooltipY + 30);
+          const labelX = tooltipX + 8;
+          const valueX = labelX + labelWidth + 8;
+          ctx.fillText(tooltipLabel1, labelX, tooltipY + 15);
+          ctx.fillText(tooltipValue1, valueX, tooltipY + 15);
+          ctx.fillText(tooltipLabel2, labelX, tooltipY + 30);
+          ctx.fillText(tooltipValue2, valueX, tooltipY + 30);
         }
 
         ctx.textAlign = "start";
