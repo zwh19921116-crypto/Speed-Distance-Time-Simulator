@@ -1004,8 +1004,8 @@
           ctx.arc(hoverX, hoverY, 4, 0, Math.PI * 2);
           ctx.fill();
 
-          const tooltipLine1 = "t: " + formatNumber(convertSToTimeUnit(hoverTimeS, simTimeUnit.value)) + " " + simTimeUnit.value;
-          const tooltipLine2 = "d: " + formatNumber(hoverDistanceShown) + " " + distanceUnit.value;
+          const tooltipLine1 = "Time: " + formatNumber(convertSToTimeUnit(hoverTimeS, simTimeUnit.value)) + " " + simTimeUnit.value;
+          const tooltipLine2 = "Distance: " + formatNumber(hoverDistanceShown) + " " + distanceUnit.value;
           ctx.font = "12px Segoe UI";
           const tooltipWidth = Math.max(ctx.measureText(tooltipLine1).width, ctx.measureText(tooltipLine2).width) + 16;
           const tooltipHeight = 38;
