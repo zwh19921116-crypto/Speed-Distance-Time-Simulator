@@ -1019,12 +1019,13 @@
           ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
           ctx.fillRect(tooltipX, tooltipY, tooltipWidth, tooltipHeight);
           ctx.fillStyle = "#ffffff";
+          const labelRightX = tooltipX + 8 + labelWidth;
+          const valueX = labelRightX + 8;
+          ctx.textAlign = "right";
+          ctx.fillText(tooltipLabel1, labelRightX, tooltipY + 15);
+          ctx.fillText(tooltipLabel2, labelRightX, tooltipY + 30);
           ctx.textAlign = "left";
-          const labelX = tooltipX + 8;
-          const valueX = labelX + labelWidth + 8;
-          ctx.fillText(tooltipLabel1, labelX, tooltipY + 15);
           ctx.fillText(tooltipValue1, valueX, tooltipY + 15);
-          ctx.fillText(tooltipLabel2, labelX, tooltipY + 30);
           ctx.fillText(tooltipValue2, valueX, tooltipY + 30);
         }
 
