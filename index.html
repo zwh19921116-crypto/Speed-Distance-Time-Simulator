@@ -788,10 +788,28 @@
         timeScrubber.max = formatNumber(max);
       }
 
+      function setupCanvasForDpi(canvas, ctx) {
+        const dpr = window.devicePixelRatio || 1;
+        const cssWidth = Math.max(1, Math.floor(canvas.clientWidth));
+        const cssHeight = Math.max(1, Math.floor(canvas.clientHeight));
+        const pixelWidth = Math.floor(cssWidth * dpr);
+        const pixelHeight = Math.floor(cssHeight * dpr);
+
+        if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+          canvas.width = pixelWidth;
+          canvas.height = pixelHeight;
+        }
+
+        // Draw in CSS pixels while using high-resolution backing pixels.
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { width: cssWidth, height: cssHeight };
+      }
+
       function drawDistanceGraph() {
         const ctx = graphCtx;
-        const width = graphCanvas.width;
-        const height = graphCanvas.height;
+        const size = setupCanvasForDpi(graphCanvas, ctx);
+        const width = size.width;
+        const height = size.height;
         const padLeft = 52;
         const padRight = 16;
         const padTop = 16;
@@ -873,8 +891,9 @@
 
       function drawSpeedGraph() {
         const ctx = speedGraphCtx;
-        const width = speedGraphCanvas.width;
-        const height = speedGraphCanvas.height;
+        const size = setupCanvasForDpi(speedGraphCanvas, ctx);
+        const width = size.width;
+        const height = size.height;
         const padLeft = 52;
         const padRight = 16;
         const padTop = 16;
