@@ -590,7 +590,12 @@
               <div class="field">
                 <label for="simDistance">Simulation Distance</label>
                 <div class="input-row">
-                  <input id="simDistance" type="number" step="any" placeholder="leave blank to solve" />
+                  <input id="simDistance" type="number" step="any" value="1" />
+                  <select id="distanceUnit" aria-label="Distance unit">
+                    <option value="m">m</option>
+                    <option value="km" selected>km</option>
+                    <option value="mi">mi</option>
+                  </select>
                 </div>
               </div>
 
@@ -599,17 +604,6 @@
                 <div class="input-row">
                   <input id="simAcceleration" type="number" step="any" value="0" />
                   <span>m/s²</span>
-                </div>
-              </div>
-
-              <div class="field">
-                <label for="distanceUnit">Distance Unit</label>
-                <div class="input-row">
-                  <select id="distanceUnit" aria-label="Distance unit">
-                    <option value="m">m</option>
-                    <option value="km" selected>km</option>
-                    <option value="mi">mi</option>
-                  </select>
                 </div>
               </div>
 
