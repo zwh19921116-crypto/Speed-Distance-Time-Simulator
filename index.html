@@ -652,7 +652,7 @@
               </article>
             </div>
 
-            <p class="status" id="simStatus">Ready to simulate.</p>
+            <p class="status" id="simStatus"></p>
 
             <div class="scrub">
               <div class="scrub-head">
@@ -1113,7 +1113,7 @@
         simState.speedMs = 0;
         updateScrubberLimit();
         refreshSimLabels();
-        setStatus("Ready to simulate.");
+        setStatus("");
       }
 
       startBtn.addEventListener("click", startSimulation);
