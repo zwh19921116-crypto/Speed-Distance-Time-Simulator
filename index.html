@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speed Distance Time Simulator</title>
+  <style>
+    :root {
+      --bg-1: #f3f7ff;
+      --bg-2: #e8fff6;
+      --ink-1: #1e293b;
+      --ink-2: #334155;
+      --accent: #0ea5a3;
+      --accent-2: #0b7a78;
+      --card: rgba(255, 255, 255, 0.78);
+      --ring: rgba(14, 165, 163, 0.35);
+      --warn: #b45309;
+      --ok: #166534;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: "Segoe UI", "Aptos", "Trebuchet MS", sans-serif;
+      color: var(--ink-1);
+      background:
+        radial-gradient(circle at 10% 15%, rgba(14, 165, 163, 0.18), transparent 30%),
+        radial-gradient(circle at 85% 20%, rgba(29, 78, 216, 0.15), transparent 35%),
+        linear-gradient(130deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      overflow-x: hidden;
+    }
+
+    .orb {
+      position: fixed;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      filter: blur(50px);
+      z-index: 0;
+      opacity: 0.45;
+      pointer-events: none;
+      animation: drift 13s ease-in-out infinite alternate;
+    }
+
+    .orb.one {
+      top: -80px;
+      left: -50px;
+      background: #14b8a6;
+    }
+
+    .orb.two {
+      bottom: -120px;
+      right: -30px;
+      background: #2563eb;
+      animation-delay: 1.6s;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translateY(0) translateX(0) scale(1);
+      }
+      to {
+        transform: translateY(22px) translateX(-14px) scale(1.05);
+      }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(860px, 100%);
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(2, 12, 27, 0.16);
+      backdrop-filter: blur(8px);
+      overflow: hidden;
+      animation: rise 500ms ease-out;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero {
+      padding: 28px 24px 18px;
+      background: linear-gradient(135deg, rgba(14, 165, 163, 0.15), rgba(37, 99, 235, 0.12));
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .eyebrow {
+      margin: 0;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-2);
+    }
+
+    h1 {
+      margin: 8px 0 10px;
+      line-height: 1.05;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--ink-2);
+      max-width: 62ch;
+      line-height: 1.5;
+    }
+
+    .content {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hint {
+      margin: 0;
+      padding: 12px 14px;
+      border-left: 4px solid var(--accent);
+      background: rgba(14, 165, 163, 0.08);
+      border-radius: 8px;
+      color: #0f766e;
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field {
+      background: #ffffffcc;
+      border: 1px solid #dbe7f0;
+      border-radius: 14px;
+      padding: 12px;
+      transition: border-color 160ms ease, transform 160ms ease;
+    }
+
+    .field:focus-within {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 4px var(--ring);
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid #d0dce8;
+      border-radius: 10px;
+      padding: 10px 11px;
+      font-size: 15px;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+
+    .primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 8px 20px rgba(14, 165, 163, 0.35);
+    }
+
+    .secondary {
+      color: #0f172a;
+      background: #e2e8f0;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+      opacity: 0.96;
+    }
+
+    .result {
+      margin: 0;
+      min-height: 52px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px dashed #9fb3c8;
+      background: #f8fbff;
+      color: #0f172a;
+      line-height: 1.5;
+    }
+
+    .result.ok {
+      color: var(--ok);
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .result.warn {
+      color: var(--warn);
+      border-color: #fbbf24;
+      background: #fffbeb;
+    }
+
+    .formula {
+      margin: 4px 0 0;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .footer {
+      padding: 0 24px 22px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    @media (max-width: 780px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding: 22px 18px 16px;
+      }
+
+      .content,
+      .footer {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb one"></div>
+  <div class="orb two"></div>
+
+  <main class="app">
+    <header class="hero">
+      <p class="eyebrow">Physics Tool</p>
+      <h1>Speed Distance Time Simulator</h1>
+      <p class="subtitle">
+        Fill any two values and leave one empty. The simulator computes the missing value using
+        the standard motion relationship.
+      </p>
+    </header>
+
+    <section class="content">
+      <p class="hint">Use positive values only. Time must be greater than 0 when calculating speed.</p>
+
+      <div class="grid">
+        <div class="field">
+          <label for="speed">Speed</label>
+          <div class="input-row">
+            <input id="speed" type="number" min="0" step="any" placeholder="e.g. 60" />
+            <select id="speedUnit" aria-label="Speed unit">
+              <option value="m/s">m/s</option>
+              <option value="km/h" selected>km/h</option>
+              <option value="mph">mph</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="distance">Distance</label>
+          <div class="input-row">
+            <input id="distance" type="number" min="0" step="any" placeholder="e.g. 120" />
+            <select id="distanceUnit" aria-label="Distance unit">
+              <option value="m">m</option>
+              <option value="km" selected>km</option>
+              <option value="mi">mi</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="time">Time</label>
+          <div class="input-row">
+            <input id="time" type="number" min="0" step="any" placeholder="e.g. 2" />
+            <select id="timeUnit" aria-label="Time unit">
+              <option value="s">s</option>
+              <option value="min">min</option>
+              <option value="h" selected>h</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="calculateBtn" type="button">Calculate</button>
+        <button class="secondary" id="resetBtn" type="button">Reset</button>
+      </div>
+
+      <p id="result" class="result">Result will appear here.</p>
+      <p class="formula">Formula: distance = speed x time</p>
+    </section>
+
+    <footer class="footer">
+      Ready for GitHub Pages. Commit this file as index.html in your repository root.
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const speedInput = document.getElementById("speed");
+      const distanceInput = document.getElementById("distance");
+      const timeInput = document.getElementById("time");
+
+      const speedUnit = document.getElementById("speedUnit");
+      const distanceUnit = document.getElementById("distanceUnit");
+      const timeUnit = document.getElementById("timeUnit");
+
+      const result = document.getElementById("result");
+      const calculateBtn = document.getElementById("calculateBtn");
+      const resetBtn = document.getElementById("resetBtn");
+
+      function show(message, state) {
+        result.textContent = message;
+        result.className = "result" + (state ? " " + state : "");
+      }
+
+      function toNumber(value) {
+        if (value === "" || value === null) return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+      }
+
+      function convertSpeedToMs(value, unit) {
+        if (unit === "m/s") return value;
+        if (unit === "km/h") return value / 3.6;
+        if (unit === "mph") return value * 0.44704;
+        return value;
+      }
+
+      function convertMsToUnit(value, unit) {
+        if (unit === "m/s") return value;
+        if (unit === "km/h") return value * 3.6;
+        if (unit === "mph") return value / 0.44704;
+        return value;
+      }
+
+      function convertDistanceToM(value, unit) {
+        if (unit === "m") return value;
+        if (unit === "km") return value * 1000;
+        if (unit === "mi") return value * 1609.344;
+        return value;
+      }
+
+      function convertMToDistanceUnit(value, unit) {
+        if (unit === "m") return value;
+        if (unit === "km") return value / 1000;
+        if (unit === "mi") return value / 1609.344;
+        return value;
+      }
+
+      function convertTimeToS(value, unit) {
+        if (unit === "s") return value;
+        if (unit === "min") return value * 60;
+        if (unit === "h") return value * 3600;
+        return value;
+      }
+
+      function convertSToTimeUnit(value, unit) {
+        if (unit === "s") return value;
+        if (unit === "min") return value / 60;
+        if (unit === "h") return value / 3600;
+        return value;
+      }
+
+      function formatNumber(num) {
+        if (!Number.isFinite(num)) return "-";
+        if (Math.abs(num) >= 1000) return num.toFixed(2);
+        return Number(num.toPrecision(6)).toString();
+      }
+
+      function validateValues(entries) {
+        for (const item of entries) {
+          if (item.value !== null && item.value < 0) {
+            return item.name + " cannot be negative.";
+          }
+        }
+        return null;
+      }
+
+      function calculate() {
+        const speed = toNumber(speedInput.value);
+        const distance = toNumber(distanceInput.value);
+        const time = toNumber(timeInput.value);
+
+        const filled = [speed, distance, time].filter((v) => v !== null).length;
+
+        if (filled !== 2) {
+          show("Enter exactly two values and leave one blank.", "warn");
+          return;
+        }
+
+        const invalid = validateValues([
+          { name: "Speed", value: speed },
+          { name: "Distance", value: distance },
+          { name: "Time", value: time },
+        ]);
+
+        if (invalid) {
+          show(invalid, "warn");
+          return;
+        }
+
+        if (speed !== null && distance !== null && time === null) {
+          const sMs = convertSpeedToMs(speed, speedUnit.value);
+          const dM = convertDistanceToM(distance, distanceUnit.value);
+          if (sMs === 0) {
+            show("Speed must be greater than 0 to calculate time.", "warn");
+            return;
+          }
+          const timeS = dM / sMs;
+          const timeOut = convertSToTimeUnit(timeS, timeUnit.value);
+          timeInput.value = formatNumber(timeOut);
+          show("Time = " + formatNumber(timeOut) + " " + timeUnit.value, "ok");
+          return;
+        }
+
+        if (speed !== null && time !== null && distance === null) {
+          const sMs = convertSpeedToMs(speed, speedUnit.value);
+          const tS = convertTimeToS(time, timeUnit.value);
+          const dM = sMs * tS;
+          const distOut = convertMToDistanceUnit(dM, distanceUnit.value);
+          distanceInput.value = formatNumber(distOut);
+          show("Distance = " + formatNumber(distOut) + " " + distanceUnit.value, "ok");
+          return;
+        }
+
+        if (distance !== null && time !== null && speed === null) {
+          const dM = convertDistanceToM(distance, distanceUnit.value);
+          const tS = convertTimeToS(time, timeUnit.value);
+          if (tS === 0) {
+            show("Time must be greater than 0 to calculate speed.", "warn");
+            return;
+          }
+          const sMs = dM / tS;
+          const speedOut = convertMsToUnit(sMs, speedUnit.value);
+          speedInput.value = formatNumber(speedOut);
+          show("Speed = " + formatNumber(speedOut) + " " + speedUnit.value, "ok");
+          return;
+        }
+
+        show("Could not calculate. Check your inputs.", "warn");
+      }
+
+      function reset() {
+        speedInput.value = "";
+        distanceInput.value = "";
+        timeInput.value = "";
+        show("Result will appear here.");
+      }
+
+      calculateBtn.addEventListener("click", calculate);
+      resetBtn.addEventListener("click", reset);
+
+      [speedInput, distanceInput, timeInput].forEach((input) => {
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            calculate();
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
