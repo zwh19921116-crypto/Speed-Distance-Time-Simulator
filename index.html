@@ -762,8 +762,7 @@
       }
 
       function applyModeVisibility() {
-        const showSpeedUi = simState.mode === "accelerated";
-        speedCard.style.display = showSpeedUi ? "grid" : "none";
+        speedCard.style.display = "grid";
       }
 
       function solveTimeFromDistance(speedMs, accelerationMs2, distanceM) {
