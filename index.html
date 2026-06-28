@@ -612,7 +612,9 @@
             <div class="formula-panel" aria-label="Dynamic formula output">
               <p class="formula-title">Calculation</p>
               <p class="formula-line" id="formulaEquation">Formula will appear here.</p>
+              <p class="formula-line" id="formulaConversion"></p>
               <p class="formula-line" id="formulaSubstitution"></p>
+              <p class="formula-line" id="formulaWorking"></p>
               <p class="formula-line" id="formulaResult"></p>
             </div>
 
@@ -662,7 +664,9 @@
       const progressLabel = document.getElementById("progressLabel");
       const simStatus = document.getElementById("simStatus");
       const formulaEquation = document.getElementById("formulaEquation");
+      const formulaConversion = document.getElementById("formulaConversion");
       const formulaSubstitution = document.getElementById("formulaSubstitution");
+      const formulaWorking = document.getElementById("formulaWorking");
       const formulaResult = document.getElementById("formulaResult");
       const timeScrubber = document.getElementById("timeScrubber");
       const scrubValue = document.getElementById("scrubValue");
@@ -730,7 +734,9 @@
 
       function clearFormulaPanel(message) {
         formulaEquation.textContent = message || "Formula will appear here.";
+        formulaConversion.textContent = "";
         formulaSubstitution.textContent = "";
+        formulaWorking.textContent = "";
         formulaResult.textContent = "";
       }
 
@@ -751,40 +757,52 @@
         if (!accelerated) {
           if (targetField === "distance") {
             formulaEquation.textContent = "Formula: d = v × t";
-            formulaSubstitution.textContent = "Substitute: " + speedBase + " × " + timeBase + " = " + distanceBase;
+            formulaConversion.textContent = "Convert to base units: Speed = " + speedShown + " = " + speedBase + "; Time = " + timeShown + " = " + timeBase;
+            formulaSubstitution.textContent = "Substitute: d = " + speedBase + " × " + timeBase;
+            formulaWorking.textContent = "Working: d = " + formatNumber(speedMs) + " × " + formatNumber(timeS) + " = " + formatNumber(distanceM) + " m";
             formulaResult.innerHTML = "<strong>Output:</strong> Distance = " + distanceShown;
             return;
           }
 
           if (targetField === "speed") {
             formulaEquation.textContent = "Formula: v = d / t";
-            formulaSubstitution.textContent = "Substitute: " + distanceBase + " / " + timeBase + " = " + speedBase;
+            formulaConversion.textContent = "Convert to base units: Distance = " + distanceShown + " = " + distanceBase + "; Time = " + timeShown + " = " + timeBase;
+            formulaSubstitution.textContent = "Substitute: v = " + distanceBase + " / " + timeBase;
+            formulaWorking.textContent = "Working: v = " + formatNumber(distanceM) + " / " + formatNumber(timeS) + " = " + formatNumber(speedMs) + " m/s";
             formulaResult.innerHTML = "<strong>Output:</strong> Speed = " + speedShown;
             return;
           }
 
           formulaEquation.textContent = "Formula: t = d / v";
-          formulaSubstitution.textContent = "Substitute: " + distanceBase + " / " + speedBase + " = " + timeBase;
+          formulaConversion.textContent = "Convert to base units: Distance = " + distanceShown + " = " + distanceBase + "; Speed = " + speedShown + " = " + speedBase;
+          formulaSubstitution.textContent = "Substitute: t = " + distanceBase + " / " + speedBase;
+          formulaWorking.textContent = "Working: t = " + formatNumber(distanceM) + " / " + formatNumber(speedMs) + " = " + formatNumber(timeS) + " s";
           formulaResult.innerHTML = "<strong>Output:</strong> Time = " + timeShown;
           return;
         }
 
         if (targetField === "distance") {
           formulaEquation.textContent = "Formula: d = v0t + 1/2at^2";
-          formulaSubstitution.textContent = "Substitute: (" + formatNumber(speedMs) + " × " + formatNumber(timeS) + ") + 0.5 × " + formatNumber(accelerationMs2) + " × " + formatNumber(timeS) + "^2 = " + formatNumber(distanceM) + " m";
+          formulaConversion.textContent = "Convert to base units: Initial speed = " + speedShown + " = " + speedBase + "; Time = " + timeShown + " = " + timeBase + "; Acceleration = " + formatNumber(accelerationMs2) + " m/s²";
+          formulaSubstitution.textContent = "Substitute: d = (" + speedBase + " × " + timeBase + ") + 1/2 × " + formatNumber(accelerationMs2) + " × " + formatNumber(timeS) + "^2";
+          formulaWorking.textContent = "Working: d = (" + formatNumber(speedMs) + " × " + formatNumber(timeS) + ") + 0.5 × " + formatNumber(accelerationMs2) + " × " + formatNumber(timeS * timeS) + " = " + formatNumber(distanceM) + " m";
           formulaResult.innerHTML = "<strong>Output:</strong> Distance = " + distanceShown;
           return;
         }
 
         if (targetField === "speed") {
           formulaEquation.textContent = "Formula: v0 = (d - 1/2at^2) / t";
-          formulaSubstitution.textContent = "Substitute: (" + formatNumber(distanceM) + " - 0.5 × " + formatNumber(accelerationMs2) + " × " + formatNumber(timeS) + "^2) / " + formatNumber(timeS) + " = " + formatNumber(speedMs) + " m/s";
+          formulaConversion.textContent = "Convert to base units: Distance = " + distanceShown + " = " + distanceBase + "; Time = " + timeShown + " = " + timeBase + "; Acceleration = " + formatNumber(accelerationMs2) + " m/s²";
+          formulaSubstitution.textContent = "Substitute: v0 = (" + formatNumber(distanceM) + " - 1/2 × " + formatNumber(accelerationMs2) + " × " + formatNumber(timeS) + "^2) / " + formatNumber(timeS);
+          formulaWorking.textContent = "Working: v0 = (" + formatNumber(distanceM) + " - 0.5 × " + formatNumber(accelerationMs2) + " × " + formatNumber(timeS * timeS) + ") / " + formatNumber(timeS) + " = " + formatNumber(speedMs) + " m/s";
           formulaResult.innerHTML = "<strong>Output:</strong> Speed = " + speedShown;
           return;
         }
 
         formulaEquation.textContent = "Formula: d = v0t + 1/2at^2";
-        formulaSubstitution.textContent = "Solve time from: " + formatNumber(distanceM) + " = (" + formatNumber(speedMs) + " × t) + 0.5 × " + formatNumber(accelerationMs2) + " × t^2";
+        formulaConversion.textContent = "Convert to base units: Distance = " + distanceShown + " = " + distanceBase + "; Initial speed = " + speedShown + " = " + speedBase + "; Acceleration = " + formatNumber(accelerationMs2) + " m/s²";
+        formulaSubstitution.textContent = "Substitute: " + formatNumber(distanceM) + " = (" + formatNumber(speedMs) + " × t) + 0.5 × " + formatNumber(accelerationMs2) + " × t^2";
+        formulaWorking.textContent = "Working: solve the quadratic for t, then take the positive root = " + formatNumber(timeS) + " s";
         formulaResult.innerHTML = "<strong>Output:</strong> Time = " + timeShown;
       }
 
