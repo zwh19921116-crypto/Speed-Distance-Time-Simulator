@@ -587,6 +587,13 @@
               </div>
 
               <div class="field">
+                <label for="simDistance">Simulation Distance</label>
+                <div class="input-row">
+                  <input id="simDistance" type="number" step="any" placeholder="leave blank to solve" />
+                </div>
+              </div>
+
+              <div class="field">
                 <label for="simAcceleration">Acceleration</label>
                 <div class="input-row">
                   <input id="simAcceleration" type="number" step="any" value="0" />
@@ -683,6 +690,7 @@
 
       const simSpeedInput = document.getElementById("simSpeed");
       const simTimeInput = document.getElementById("simTime");
+      const simDistanceInput = document.getElementById("simDistance");
       const simAccelerationInput = document.getElementById("simAcceleration");
       const motionMode = document.getElementById("motionMode");
       const simSpeedUnit = document.getElementById("simSpeedUnit");
@@ -852,6 +860,30 @@
         speedCard.style.display = showSpeedUi ? "grid" : "none";
       }
 
+      function solveTimeFromDistance(speedMs, accelerationMs2, distanceM) {
+        const EPS = 1e-12;
+
+        if (Math.abs(accelerationMs2) < EPS) {
+          if (Math.abs(speedMs) < EPS) return null;
+          return distanceM / speedMs;
+        }
+
+        const a = 0.5 * accelerationMs2;
+        const b = speedMs;
+        const c = -distanceM;
+        const disc = b * b - 4 * a * c;
+
+        if (disc < 0) return null;
+
+        const sqrtDisc = Math.sqrt(disc);
+        const t1 = (-b + sqrtDisc) / (2 * a);
+        const t2 = (-b - sqrtDisc) / (2 * a);
+
+        const positiveRoots = [t1, t2].filter((t) => Number.isFinite(t) && t > 0);
+        if (positiveRoots.length === 0) return null;
+        return Math.min(...positiveRoots);
+      }
+
       function drawDistanceGraph() {
         const ctx = graphCtx;
         const size = setupCanvasForDpi(graphCanvas, ctx);
@@ -966,26 +998,58 @@
       function parseSimulationInputs() {
         const speed = toNumber(simSpeedInput.value);
         const time = toNumber(simTimeInput.value);
-        const acceleration = toNumber(simAccelerationInput.value);
+        const distance = toNumber(simDistanceInput.value);
+        const accelerationInput = toNumber(simAccelerationInput.value);
+        const acceleration = accelerationInput === null ? 0 : accelerationInput;
 
-        if (speed === null || time === null || acceleration === null) {
-          setStatus("Simulation speed, time, and acceleration are required.");
+        const speedMsInput = speed === null ? null : convertSpeedToMs(speed, simSpeedUnit.value);
+        const timeSInput = time === null ? null : convertTimeToS(time, simTimeUnit.value);
+        const distanceMInput = distance === null ? null : convertDistanceToM(distance, distanceUnit.value);
+
+        const knownCount = [speedMsInput, timeSInput, distanceMInput].filter((v) => v !== null).length;
+        if (knownCount < 2) {
+          setStatus("Enter at least two values among Speed, Time, and Distance.");
           return false;
         }
 
-        if (time === 0) {
+        let solvedSpeedMs = speedMsInput;
+        let solvedTimeS = timeSInput;
+        let solvedDistanceM = distanceMInput;
+
+        const activeAcceleration = motionMode.value === "accelerated" ? acceleration : 0;
+
+        if (solvedSpeedMs === null) {
+          if (solvedTimeS === 0) {
+            setStatus("Time cannot be 0 when solving speed.");
+            return false;
+          }
+          solvedSpeedMs = (solvedDistanceM - 0.5 * activeAcceleration * solvedTimeS * solvedTimeS) / solvedTimeS;
+          simSpeedInput.value = formatNumber(convertMsToUnit(solvedSpeedMs, simSpeedUnit.value));
+        }
+
+        if (solvedTimeS === null) {
+          solvedTimeS = solveTimeFromDistance(solvedSpeedMs, activeAcceleration, solvedDistanceM);
+          if (solvedTimeS === null || solvedTimeS === 0) {
+            setStatus("Could not solve time from current values.");
+            return false;
+          }
+          simTimeInput.value = formatNumber(convertSToTimeUnit(solvedTimeS, simTimeUnit.value));
+        }
+
+        if (solvedDistanceM === null) {
+          solvedDistanceM = solvedSpeedMs * solvedTimeS + 0.5 * activeAcceleration * solvedTimeS * solvedTimeS;
+          simDistanceInput.value = formatNumber(convertMToDistanceUnit(solvedDistanceM, distanceUnit.value));
+        }
+
+        if (solvedTimeS === 0) {
           setStatus("Simulation time cannot be 0.");
           return false;
         }
 
-        if (motionMode.value === "uniform" && acceleration !== 0) {
-          setStatus("Uniform mode ignores acceleration. Set mode to Accelerated to use it.");
-        }
-
         simState.mode = motionMode.value;
-        simState.speedMs = convertSpeedToMs(speed, simSpeedUnit.value);
-        simState.durationS = Math.abs(convertTimeToS(time, simTimeUnit.value));
-        simState.accelerationMs2 = acceleration;
+        simState.speedMs = solvedSpeedMs;
+        simState.durationS = Math.abs(solvedTimeS);
+        simState.accelerationMs2 = activeAcceleration;
         simState.playbackRate = Number(rateInput.value);
         updateScrubberLimit();
         applyModeVisibility();
@@ -1062,7 +1126,7 @@
         setStatus("Updated from slider position.");
       });
 
-      [motionMode, simSpeedInput, simTimeInput, simAccelerationInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
+      [motionMode, simSpeedInput, simTimeInput, simDistanceInput, simAccelerationInput, simSpeedUnit, simTimeUnit, distanceUnit].forEach((node) => {
         node.addEventListener("change", function () {
           parseSimulationInputs();
           refreshSimLabels();
