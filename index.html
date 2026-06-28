@@ -642,7 +642,7 @@
                 <p class="sim-label">Distance Traveled</p>
                 <p class="sim-value" id="distanceLabel">0 m</p>
               </article>
-              <article class="sim-card">
+              <article class="sim-card" id="speedCard">
                 <p class="sim-label">Speed</p>
                 <p class="sim-value" id="speedLabel">0 km/h</p>
               </article>
@@ -667,7 +667,7 @@
               <p class="graph-note">Distance-time graph updates with mode. Accelerated mode draws a curve.</p>
             </div>
 
-            <div class="graph">
+            <div class="graph" id="speedGraphWrap">
               <canvas id="speedTimeGraph" width="760" height="220" aria-label="Speed-time graph"></canvas>
               <p class="graph-note">Speed-time graph updates live and follows slider position.</p>
             </div>
@@ -702,6 +702,7 @@
       const elapsedLabel = document.getElementById("elapsedLabel");
       const distanceLabel = document.getElementById("distanceLabel");
       const speedLabel = document.getElementById("speedLabel");
+      const speedCard = document.getElementById("speedCard");
       const progressLabel = document.getElementById("progressLabel");
       const simStatus = document.getElementById("simStatus");
       const timeScrubber = document.getElementById("timeScrubber");
@@ -709,6 +710,7 @@
 
       const graphCanvas = document.getElementById("distanceTimeGraph");
       const graphCtx = graphCanvas.getContext("2d");
+      const speedGraphWrap = document.getElementById("speedGraphWrap");
       const speedGraphCanvas = document.getElementById("speedTimeGraph");
       const speedGraphCtx = speedGraphCanvas.getContext("2d");
 
@@ -851,6 +853,12 @@
         // Draw in CSS pixels while using high-resolution backing pixels.
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         return { width: cssWidth, height: cssHeight };
+      }
+
+      function applyModeVisibility() {
+        const showSpeedUi = simState.mode === "accelerated";
+        speedCard.style.display = showSpeedUi ? "grid" : "none";
+        speedGraphWrap.style.display = showSpeedUi ? "block" : "none";
       }
 
       function drawDistanceGraph() {
@@ -1068,6 +1076,7 @@
         simState.accelerationMs2 = acceleration;
         simState.playbackRate = Number(rateInput.value);
         updateScrubberLimit();
+        applyModeVisibility();
 
         return true;
       }
@@ -1151,6 +1160,8 @@
       window.addEventListener("resize", refreshSimLabels);
 
       resetSimulation();
+      parseSimulationInputs();
+      applyModeVisibility();
     })();
   </script>
 </body>
