@@ -788,6 +788,8 @@
         lastTickMs: 0,
       };
 
+      let lastEditedField = "simTime";
+
       function speedAtTimeS(t) {
         if (simState.mode === "accelerated") {
           return Math.max(0, simState.speedMs + simState.accelerationMs2 * t);
@@ -1018,6 +1020,16 @@
 
         const activeAcceleration = motionMode.value === "accelerated" ? acceleration : 0;
 
+        if (knownCount === 3) {
+          if (lastEditedField === "simDistance") {
+            solvedTimeS = null;
+          } else if (lastEditedField === "simTime") {
+            solvedDistanceM = null;
+          } else if (lastEditedField === "simSpeed") {
+            solvedDistanceM = null;
+          }
+        }
+
         if (solvedSpeedMs === null) {
           if (solvedTimeS === 0) {
             setStatus("Time cannot be 0 when solving speed.");
@@ -1109,6 +1121,14 @@
       rateInput.addEventListener("input", function () {
         simState.playbackRate = Number(rateInput.value);
         rateText.textContent = formatNumber(simState.playbackRate) + "x";
+      });
+
+      [simSpeedInput, simTimeInput, simDistanceInput].forEach((node) => {
+        node.addEventListener("input", function () {
+          lastEditedField = node.id;
+          parseSimulationInputs();
+          refreshSimLabels();
+        });
       });
 
       timeScrubber.addEventListener("input", function () {
